@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Nilai Akhir Mahasiswa (KKNI)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                            950: '#1e1b4b',
+                        }
+                    },
+                    boxShadow: {
+                        'glow-indigo': '0 0 25px -5px rgba(99, 102, 241, 0.35)',
+                        'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.35)',
+                        'glow-rose': '0 0 25px -5px rgba(244, 63, 94, 0.35)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        /* Circular Gauge Animation */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        /* Subtle pulse on manual calculate */
+        @keyframes pulse-highlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.015); }
+            100% { transform: scale(1); }
+        }
+        .animate-highlight {
+            animation: pulse-highlight 0.5s ease-in-out;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white relative overflow-x-hidden">
+
+    <!-- Ambient Background Glow (Visible especially in Dark Mode) -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-500/10 dark:bg-brand-500/15 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-teal-500/10 dark:bg-teal-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full opacity-0 transition-all duration-300 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700/60 flex items-center gap-3 max-w-sm">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-brand-400 text-lg"></i>
+        <p id="toast-message" class="text-sm font-medium tracking-wide">Notifikasi</p>
+    </div>
+
+    <!-- Top Navigation / Header -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                
+                <!-- Brand & Title -->
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 border border-white/20">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand-100 text-brand-700 dark:bg-brand-950/90 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                                Kurikulum KKNI
+                            </span>
+                            <span class="hidden sm:inline-flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500">
+                                <i class="fa-solid fa-bolt text-amber-400"></i> Real-time
+                            </span>
+                        </div>
+                        <h1 class="text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-0.5">
+                            Kalkulator Nilai Akhir Mahasiswa
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Right Controls: Demo, Reset, Theme Toggle -->
+                <div class="flex items-center gap-2 sm:gap-3 ml-auto">
+                    <button onclick="fillDemoData()" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 transition flex items-center gap-2 active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span class="hidden sm:inline">Isi Contoh Nilai</span>
+                        <span class="sm:hidden">Contoh</span>
+                    </button>
+
+                    <button onclick="resetForm()" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-950/50 dark:text-slate-300 dark:hover:text-rose-400 border border-slate-200/80 dark:border-slate-700/80 transition flex items-center gap-2 active:scale-95">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span class="hidden sm:inline">Reset</span>
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
+
+                    <!-- Theme Switcher Button -->
+                    <button id="theme-toggle" onclick="toggleTheme()" aria-label="Ganti Tema Gelap atau Terang"
+                        class="relative p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-300 border border-slate-200/80 dark:border-slate-700 transition-all duration-300 flex items-center gap-2 active:scale-95 shadow-sm group">
+                        <div class="w-5 h-5 flex items-center justify-center relative">
+                            <!-- Sun Icon (shown in dark mode) -->
+                            <i id="theme-icon-sun" class="fa-solid fa-sun text-amber-400 text-base transition-all duration-300 transform scale-0 opacity-0 absolute"></i>
+                            <!-- Moon Icon (shown in light mode) -->
+                            <i id="theme-icon-moon" class="fa-solid fa-moon text-indigo-600 text-base transition-all duration-300 transform scale-100 opacity-100 absolute"></i>
+                        </div>
+                        <span id="theme-toggle-text" class="text-xs font-bold hidden md:inline pr-1 text-slate-700 dark:text-slate-200">
+                            Mode Gelap
+                        </span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- Formula Banner Overview -->
+        <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 mb-8 transition-colors">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex items-start sm:items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-brand-50 dark:bg-brand-950/80 text-brand-600 dark:text-brand-400 border border-brand-100 dark:border-brand-800/70 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-square-root-variable text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Formula Perhitungan Nilai Akhir (NA)
+                        </h2>
+                        <p class="font-mono text-xs sm:text-sm md:text-base font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+                            NA = <span class="text-teal-600 dark:text-teal-400">(0.05 × F1)</span> + <span class="text-blue-600 dark:text-blue-400">(0.20 × F2)</span> + <span class="text-indigo-600 dark:text-indigo-400">(0.25 × F3)</span> + <span class="text-purple-600 dark:text-purple-400">(0.50 × F4)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pills summary -->
+                <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
+                    <span class="px-3 py-1.5 rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/60">
+                        F1 Kehadiran: 5%
+                    </span>
+                    <span class="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                        F2 UTS: 20%
+                    </span>
+                    <span class="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                        F3 UAS: 25%
+                    </span>
+                    <span class="px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60">
+                        F4 (6 Tugas): 50%
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- LEFT COLUMN: INPUT FORMS (7 Cols) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- CARD F1, F2, F3 -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 overflow-hidden transition-colors">
+                    <div class="px-6 py-4 bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-Sliders text-brand-500"></i>
+                            <h3 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
+                                Komponen Utama Perkuliahan (F1, F2, F3)
+                            </h3>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Bobot: 50%</span>
+                    </div>
+
+                    <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        
+                        <!-- F1: Kehadiran -->
+                        <div class="p-4 rounded-2xl bg-teal-50/40 dark:bg-teal-950/20 border border-teal-200/70 dark:border-teal-900/60 flex flex-col justify-between transition hover:border-teal-400 dark:hover:border-teal-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-teal-500 text-white shadow-sm">
+                                        F1
+                                    </span>
+                                    <span class="text-xs font-bold text-teal-700 dark:text-teal-300">Bobot 5%</span>
+                                </div>
+                                <label for="f1_kehadiran" class="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-0.5">
+                                    Kehadiran
+                                </label>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">Presensi kuliah (0-100)</p>
+                            </div>
+                            <div>
+                                <div class="relative">
+                                    <input type="number" id="f1_kehadiran" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                        class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition">
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                                </div>
+                                <div class="mt-2.5 flex items-center justify-between text-[11px]">
+                                    <span class="text-slate-500 dark:text-slate-400">Poin NA:</span>
+                                    <span id="f1-inline-pts" class="font-mono font-bold text-teal-600 dark:text-teal-400">+0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- F2: UTS -->
+                        <div class="p-4 rounded-2xl bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/70 dark:border-blue-900/60 flex flex-col justify-between transition hover:border-blue-400 dark:hover:border-blue-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-blue-600 text-white shadow-sm">
+                                        F2
+                                    </span>
+                                    <span class="text-xs font-bold text-blue-700 dark:text-blue-300">Bobot 20%</span>
+                                </div>
+                                <label for="f2_uts" class="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-0.5">
+                                    Nilai UTS
+                                </label>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">Ujian Tengah Semester</p>
+                            </div>
+                            <div>
+                                <div class="relative">
+                                    <input type="number" id="f2_uts" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                        class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                                </div>
+                                <div class="mt-2.5 flex items-center justify-between text-[11px]">
+                                    <span class="text-slate-500 dark:text-slate-400">Poin NA:</span>
+                                    <span id="f2-inline-pts" class="font-mono font-bold text-blue-600 dark:text-blue-400">+0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- F3: UAS -->
+                        <div class="p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-900/60 flex flex-col justify-between transition hover:border-indigo-400 dark:hover:border-indigo-700">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-indigo-600 text-white shadow-sm">
+                                        F3
+                                    </span>
+                                    <span class="text-xs font-bold text-indigo-700 dark:text-indigo-300">Bobot 25%</span>
+                                </div>
+                                <label for="f3_uas" class="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-0.5">
+                                    Nilai UAS
+                                </label>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">Ujian Akhir Semester</p>
+                            </div>
+                            <div>
+                                <div class="relative">
+                                    <input type="number" id="f3_uas" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                        class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold text-base focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                                </div>
+                                <div class="mt-2.5 flex items-center justify-between text-[11px]">
+                                    <span class="text-slate-500 dark:text-slate-400">Poin NA:</span>
+                                    <span id="f3-inline-pts" class="font-mono font-bold text-indigo-600 dark:text-indigo-400">+0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- CARD F4: 6 TUGAS KKNI (50% DARI NA) -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border-2 border-purple-200/80 dark:border-purple-900/60 overflow-hidden transition-colors">
+                    <!-- Card Header -->
+                    <div class="bg-gradient-to-r from-purple-50/90 via-indigo-50/60 to-brand-50/90 dark:from-purple-950/50 dark:via-slate-900 dark:to-indigo-950/50 border-b border-purple-200/70 dark:border-purple-900/50 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-brand-600 text-white font-extrabold text-sm flex items-center justify-center shadow-md shadow-purple-500/20">
+                                F4
+                            </span>
+                            <div>
+                                <h3 class="text-base font-extrabold text-slate-800 dark:text-white">
+                                    Komponen 6 Tugas KKNI (F4)
+                                </h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    TR (5%) + CBR (5%) + CJR (10%) + PKSEID (10%) + MR (30%) + PR (40%)
+                                </p>
+                            </div>
+                        </div>
+                        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-purple-600 text-white shadow-sm">
+                            Bobot NA: 50%
+                        </span>
+                    </div>
+
+                    <div class="p-6 space-y-6">
+                        
+                        <!-- 1. TUGAS RUTIN (3 KOLOM INPUT) -->
+                        <div class="bg-slate-50/90 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-700/70">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-lg bg-brand-100 dark:bg-brand-900/60 text-brand-600 dark:text-brand-300 flex items-center justify-center text-xs font-bold">
+                                        1
+                                    </span>
+                                    <div>
+                                        <h4 class="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wide">
+                                            Tugas Rutin (TR) — 3 Kolom
+                                        </h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Diambil nilai rata-rata dari TR 1, TR 2, dan TR 3
+                                        </p>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-brand-100/80 dark:bg-brand-950 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                                    Bobot F4: 5%
+                                </span>
+                            </div>
+
+                            <!-- 3 Input Columns for TR -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                <div>
+                                    <label for="tr1" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                                        Tugas Rutin 1 (TR 1)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="number" id="tr1" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                            class="score-input w-full pl-3.5 pr-9 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition">
+                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-mono text-slate-400">/100</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="tr2" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                                        Tugas Rutin 2 (TR 2)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="number" id="tr2" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                            class="score-input w-full pl-3.5 pr-9 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition">
+                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-mono text-slate-400">/100</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="tr3" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                                        Tugas Rutin 3 (TR 3)
+                                    </label>
+                                    <div class="relative">
+                                        <input type="number" id="tr3" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                            class="score-input w-full pl-3.5 pr-9 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition">
+                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-mono text-slate-400">/100</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Live TR Average Footer -->
+                            <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                <span class="text-slate-500 dark:text-slate-400 font-medium">
+                                    Rumus: <code class="font-mono text-slate-700 dark:text-slate-300">(TR1 + TR2 + TR3) / 3</code>
+                                </span>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-slate-600 dark:text-slate-300 font-semibold">
+                                        Rata-rata TR: <strong id="avg-tr-text" class="font-mono text-sm text-brand-600 dark:text-brand-400 ml-1">0.00</strong>
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-mono text-[11px] font-bold">
+                                        Kontribusi F4: <span id="tr-f4-contrib">0.00</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. CBR (5%) & 3. CJR (10%) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- CBR -->
+                            <div class="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/70">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="cbr" class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <span class="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs flex items-center justify-center font-bold">2</span>
+                                        Critical Book Review (CBR)
+                                    </label>
+                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                        5% F4
+                                    </span>
+                                </div>
+                                <div class="relative">
+                                    <input type="number" id="cbr" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                        class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold focus:ring-2 focus:ring-purple-500 outline-none transition">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                                </div>
+                            </div>
+
+                            <!-- CJR -->
+                            <div class="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/70">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="cjr" class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <span class="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs flex items-center justify-center font-bold">3</span>
+                                        Critical Journal Review (CJR)
+                                    </label>
+                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                        10% F4
+                                    </span>
+                                </div>
+                                <div class="relative">
+                                    <input type="number" id="cjr" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                        class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold focus:ring-2 focus:ring-purple-500 outline-none transition">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. PKSEID / REKAYASA IDE (10%) -->
+                        <div class="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/70">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="pkseid" class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs flex items-center justify-center font-bold">4</span>
+                                    Rekayasa Ide / PKSEID
+                                </label>
+                                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                    Bobot F4: 10%
+                                </span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" id="pkseid" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                    class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono font-bold focus:ring-2 focus:ring-purple-500 outline-none transition">
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                            </div>
+                        </div>
+
+                        <!-- 5. MINI RISET (30%) & 6. PROJECT (40%) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Mini Riset -->
+                            <div class="p-4 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/50">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="mr" class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <span class="w-5 h-5 rounded-md bg-amber-500 text-white text-xs flex items-center justify-center font-bold">5</span>
+                                        Mini Riset (MR)
+                                    </label>
+                                    <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
+                                        30% F4
+                                    </span>
+                                </div>
+                                <div class="relative">
+                                    <input type="number" id="mr" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                        class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-800 rounded-xl text-slate-900 dark:text-white font-mono font-bold focus:ring-2 focus:ring-amber-500 outline-none transition">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                                </div>
+                            </div>
+
+                            <!-- Project -->
+                            <div class="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/25 border border-purple-200/90 dark:border-purple-800/60">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="pr" class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <span class="w-5 h-5 rounded-md bg-purple-600 text-white text-xs flex items-center justify-center font-bold">6</span>
+                                        Project (PR)
+                                    </label>
+                                    <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-purple-200/80 dark:bg-purple-900/80 text-purple-900 dark:text-purple-200">
+                                        40% F4
+                                    </span>
+                                </div>
+                                <div class="relative">
+                                    <input type="number" id="pr" placeholder="0" min="0" max="100" step="any" oninput="validateAndCalculate(this)"
+                                        class="score-input w-full pl-3.5 pr-10 py-2.5 bg-white dark:bg-slate-950 border border-purple-300 dark:border-purple-800 rounded-xl text-slate-900 dark:text-white font-mono font-bold focus:ring-2 focus:ring-purple-500 outline-none transition">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">/100</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live F4 Total Summary Banner -->
+                        <div class="bg-gradient-to-r from-purple-600 to-brand-600 rounded-2xl p-4 text-white flex flex-wrap items-center justify-between gap-4 shadow-md">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                                    <i class="fa-solid fa-chart-pie text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-purple-100 font-medium">Total Skor Murni Komponen F4</div>
+                                    <div class="text-xs text-purple-200/80">Kontribusi ke Nilai Akhir (50% × F4): <strong id="f4-na-contrib-banner" class="font-mono text-white">+0.00</strong> poin</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span id="badge-f4-score" class="font-mono text-2xl font-extrabold tracking-tight">0.00</span>
+                                <span class="text-xs text-purple-200 font-mono">/ 100</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3.5">
+                    <button onclick="triggerManualCalculate()" class="flex-1 py-4 px-6 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 active:scale-[0.99] text-white font-extrabold rounded-2xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center gap-2.5">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>Hitung & Sorot Hasil Akhir</span>
+                    </button>
+                    <button onclick="copySummary()" class="py-4 px-6 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold border border-slate-200 dark:border-slate-800 rounded-2xl transition flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-regular fa-copy text-brand-500"></i>
+                        <span>Salin Hasil</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: RESULT DASHBOARD & BREAKDOWN (5 Cols) -->
+            <div class="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
+                
+                <!-- MAIN RESULT CARD -->
+                <div id="result-card" class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl dark:shadow-glow-indigo border border-slate-200/90 dark:border-slate-800 overflow-hidden transition-all duration-300">
+                    
+                    <!-- Top Visual Score & Circular Ring -->
+                    <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white p-6 sm:p-7 relative overflow-hidden">
+                        <!-- Decorative Glow -->
+                        <div class="absolute -right-10 -top-10 w-44 h-44 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="absolute -left-10 -bottom-10 w-44 h-44 bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                        <div class="flex items-center justify-between mb-6 relative z-10">
+                            <span class="text-xs font-extrabold uppercase tracking-widest text-indigo-300 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+                                Hasil Akhir Mahasiswa
+                            </span>
+                            <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                                Menunggu Input
+                            </span>
+                        </div>
+
+                        <!-- Circular Gauge & Letter Grade -->
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10 my-2">
+                            
+                            <!-- SVG Circular Progress Gauge -->
+                            <div class="relative w-36 h-36 flex items-center justify-center shrink-0">
+                                <svg class="w-full h-full" viewBox="0 0 120 120">
+                                    <!-- Background Track -->
+                                    <circle class="text-slate-800" stroke-width="10" stroke="currentColor" fill="transparent" r="50" cx="60" cy="60"/>
+                                    <!-- Animated Value Ring -->
+                                    <circle id="gauge-ring" class="progress-ring__circle text-brand-400" stroke-width="10" stroke-linecap="round" stroke="currentColor" fill="transparent" r="50" cx="60" cy="60"
+                                        stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Skor NA</span>
+                                    <span id="final-score" class="font-mono text-3xl font-extrabold text-white tracking-tight mt-0.5">
+                                        0.00
+                                    </span>
+                                    <span class="text-[10px] text-slate-400 font-mono">/ 100</span>
+                                </div>
+                            </div>
+
+                            <!-- Grade Letter Box & Predicate -->
+                            <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-4">
+                                <div class="text-left sm:text-right">
+                                    <div class="text-xs text-slate-400 font-medium">Nilai Huruf / Grade</div>
+                                    <div id="grade-desc" class="text-sm font-bold text-rose-300 mt-0.5">Kurang / Tidak Lulus</div>
+                                    <div class="text-[11px] text-slate-400 mt-1">Ambang Lulus: ≥ 65.00 (C)</div>
+                                </div>
+                                <div id="final-letter" class="w-20 h-20 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-md flex items-center justify-center text-4xl font-black text-rose-400 shadow-inner">
+                                    E
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Linear Progress Bar with Threshold Markers -->
+                        <div class="mt-6 relative z-10">
+                            <div class="w-full bg-slate-800/90 h-3 rounded-full overflow-hidden p-0.5 border border-slate-700/60">
+                                <div id="score-progress-bar" class="bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1.5">
+                                <span>0 (E)</span>
+                                <span>65 (C)</span>
+                                <span>75 (B)</span>
+                                <span>85 (A)</span>
+                                <span>100</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VISUAL PROGRESS BARS PER COMPONENT (F1 - F4) -->
+                    <div class="p-6 bg-slate-50/70 dark:bg-slate-800/30 border-b border-slate-200/80 dark:border-slate-800">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4 flex items-center justify-between">
+                            <span><i class="fa-solid fa-chart-simple text-brand-500 mr-1.5"></i> Visualisasi Poin F1 – F4</span>
+                            <span class="font-mono text-[11px] text-slate-400">Poin / Maks</span>
+                        </h4>
+
+                        <div class="space-y-3.5 text-xs">
+                            <!-- Bar F1 -->
+                            <div>
+                                <div class="flex justify-between font-semibold mb-1">
+                                    <span class="text-slate-700 dark:text-slate-300">F1: Kehadiran <span class="text-slate-400 font-normal">(Nilai: <span id="bar-f1-raw">0</span>)</span></span>
+                                    <span class="font-mono font-bold text-teal-600 dark:text-teal-400"><span id="bar-f1-pts">0.00</span> / 5.00</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="bar-f1-fill" class="h-full bg-teal-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Bar F2 -->
+                            <div>
+                                <div class="flex justify-between font-semibold mb-1">
+                                    <span class="text-slate-700 dark:text-slate-300">F2: UTS <span class="text-slate-400 font-normal">(Nilai: <span id="bar-f2-raw">0</span>)</span></span>
+                                    <span class="font-mono font-bold text-blue-600 dark:text-blue-400"><span id="bar-f2-pts">0.00</span> / 20.00</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="bar-f2-fill" class="h-full bg-blue-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Bar F3 -->
+                            <div>
+                                <div class="flex justify-between font-semibold mb-1">
+                                    <span class="text-slate-700 dark:text-slate-300">F3: UAS <span class="text-slate-400 font-normal">(Nilai: <span id="bar-f3-raw">0</span>)</span></span>
+                                    <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400"><span id="bar-f3-pts">0.00</span> / 25.00</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="bar-f3-fill" class="h-full bg-indigo-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Bar F4 -->
+                            <div>
+                                <div class="flex justify-between font-semibold mb-1">
+                                    <span class="text-slate-700 dark:text-slate-300">F4: 6 Tugas KKNI <span class="text-slate-400 font-normal">(Skor: <span id="bar-f4-raw">0.00</span>)</span></span>
+                                    <span class="font-mono font-bold text-purple-600 dark:text-purple-400"><span id="bar-f4-pts">0.00</span> / 50.00</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="bar-f4-fill" class="h-full bg-gradient-to-r from-purple-500 to-brand-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DETAILED BREAKDOWN TABLE (COLLAPSIBLE ACCORDION - DEFAULT CLOSED) -->
+                    <div class="p-4 sm:p-5">
+                        <!-- Accordion Toggle Header -->
+                        <button type="button" onclick="toggleBreakdownTable()" id="breakdown-toggle-btn" aria-expanded="false"
+                            class="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-slate-100/90 hover:bg-slate-200/70 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/70 transition-all duration-200 group">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-lg bg-brand-100 dark:bg-brand-950/90 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-table-list"></i>
+                                </div>
+                                <span id="breakdown-toggle-label" class="text-xs font-extrabold uppercase tracking-wider">
+                                    Lihat Tabel Rincian Perhitungan
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="breakdown-badge-state" class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                    Tampilkan
+                                </span>
+                                <i id="breakdown-chevron" class="fa-solid fa-chevron-down text-xs text-slate-400 group-hover:text-brand-500 transition-transform duration-300"></i>
+                            </div>
+                        </button>
+
+                        <!-- Collapsible Container (Default Closed) -->
+                        <div id="breakdown-table-container" class="hidden mt-4 pt-2 border-t border-slate-100 dark:border-slate-800/80 transition-all duration-300">
+                            <div class="flex items-center justify-between mb-2.5 px-1">
+                                <span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                                    Detail Kontribusi Komponen F1 – F4
+                                </span>
+                                <button onclick="copySummary()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline font-bold flex items-center gap-1.5">
+                                    <i class="fa-regular fa-copy"></i>
+                                    <span>Salin Rincian</span>
+                                </button>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                                            <th class="py-2 pr-2">Komponen</th>
+                                            <th class="py-2 px-2 text-right">Nilai</th>
+                                            <th class="py-2 px-2 text-right">Bobot</th>
+                                            <th class="py-2 pl-2 text-right">Poin NA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800/70 text-xs">
+                                        <tr class="font-semibold text-slate-700 dark:text-slate-200">
+                                            <td class="py-2.5 pr-2">F1: Kehadiran</td>
+                                            <td id="tbl-f1-val" class="py-2.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-2.5 px-2 text-right text-slate-500">5%</td>
+                                            <td id="tbl-f1-res" class="py-2.5 pl-2 text-right font-mono font-bold text-teal-600 dark:text-teal-400">+0.00</td>
+                                        </tr>
+                                        <tr class="font-semibold text-slate-700 dark:text-slate-200">
+                                            <td class="py-2.5 pr-2">F2: UTS</td>
+                                            <td id="tbl-f2-val" class="py-2.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-2.5 px-2 text-right text-slate-500">20%</td>
+                                            <td id="tbl-f2-res" class="py-2.5 pl-2 text-right font-mono font-bold text-blue-600 dark:text-blue-400">+0.00</td>
+                                        </tr>
+                                        <tr class="font-semibold text-slate-700 dark:text-slate-200">
+                                            <td class="py-2.5 pr-2">F3: UAS</td>
+                                            <td id="tbl-f3-val" class="py-2.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-2.5 px-2 text-right text-slate-500">25%</td>
+                                            <td id="tbl-f3-res" class="py-2.5 pl-2 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">+0.00</td>
+                                        </tr>
+                                        <tr class="bg-purple-50/50 dark:bg-purple-950/30 font-bold text-slate-800 dark:text-slate-100">
+                                            <td class="py-2.5 pr-2 pl-1">F4: 6 Tugas KKNI</td>
+                                            <td id="tbl-f4-val" class="py-2.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-2.5 px-2 text-right">50%</td>
+                                            <td id="tbl-f4-res" class="py-2.5 pl-2 text-right font-mono font-extrabold text-purple-600 dark:text-purple-400">+0.00</td>
+                                        </tr>
+                                        <!-- Sub-items of F4 -->
+                                        <tr class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <td class="py-1.5 pl-3">↳ Rata-rata TR (3 Tugas)</td>
+                                            <td id="tbl-sub-tr" class="py-1.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-1.5 px-2 text-right">5% F4</td>
+                                            <td id="tbl-sub-tr-c" class="py-1.5 pl-2 text-right font-mono">0.00 (F4)</td>
+                                        </tr>
+                                        <tr class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <td class="py-1.5 pl-3">↳ Critical Book Review (CBR)</td>
+                                            <td id="tbl-sub-cbr" class="py-1.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-1.5 px-2 text-right">5% F4</td>
+                                            <td id="tbl-sub-cbr-c" class="py-1.5 pl-2 text-right font-mono">0.00 (F4)</td>
+                                        </tr>
+                                        <tr class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <td class="py-1.5 pl-3">↳ Critical Journal Review (CJR)</td>
+                                            <td id="tbl-sub-cjr" class="py-1.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-1.5 px-2 text-right">10% F4</td>
+                                            <td id="tbl-sub-cjr-c" class="py-1.5 pl-2 text-right font-mono">0.00 (F4)</td>
+                                        </tr>
+                                        <tr class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <td class="py-1.5 pl-3">↳ Rekayasa Ide / PKSEID</td>
+                                            <td id="tbl-sub-pkseid" class="py-1.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-1.5 px-2 text-right">10% F4</td>
+                                            <td id="tbl-sub-pkseid-c" class="py-1.5 pl-2 text-right font-mono">0.00 (F4)</td>
+                                        </tr>
+                                        <tr class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <td class="py-1.5 pl-3">↳ Mini Riset (MR)</td>
+                                            <td id="tbl-sub-mr" class="py-1.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-1.5 px-2 text-right">30% F4</td>
+                                            <td id="tbl-sub-mr-c" class="py-1.5 pl-2 text-right font-mono">0.00 (F4)</td>
+                                        </tr>
+                                        <tr class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            <td class="py-1.5 pl-3">↳ Project (PR)</td>
+                                            <td id="tbl-sub-pr" class="py-1.5 px-2 text-right font-mono">0.00</td>
+                                            <td class="py-1.5 px-2 text-right">40% F4</td>
+                                            <td id="tbl-sub-pr-c" class="py-1.5 pl-2 text-right font-mono">0.00 (F4)</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="border-t-2 border-slate-200 dark:border-slate-700 font-extrabold text-slate-900 dark:text-white">
+                                            <td colspan="2" class="pt-3 pb-1">Total Nilai Akhir (NA)</td>
+                                            <td class="pt-3 pb-1 px-2 text-right text-xs text-slate-400">100%</td>
+                                            <td id="tbl-total-na" class="pt-3 pb-1 pl-2 text-right font-mono text-base text-brand-600 dark:text-brand-400">0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRADE SCALE REFERENCE CARD (A, B, C, E) -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 p-5 transition-colors">
+                    <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3.5 flex items-center gap-2">
+                        <i class="fa-solid fa-award text-amber-500"></i>
+                        Standar Konversi Nilai Huruf
+                    </h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+                        <div class="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70">
+                            <span class="block text-xl font-black text-emerald-600 dark:text-emerald-400">A</span>
+                            <span class="font-mono text-xs font-bold text-slate-700 dark:text-slate-200">85 – 100</span>
+                            <span class="block text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">Sangat Baik</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70">
+                            <span class="block text-xl font-black text-blue-600 dark:text-blue-400">B</span>
+                            <span class="font-mono text-xs font-bold text-slate-700 dark:text-slate-200">75 – 84</span>
+                            <span class="block text-[10px] font-semibold text-blue-600 dark:text-blue-400 mt-0.5">Baik</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70">
+                            <span class="block text-xl font-black text-amber-600 dark:text-amber-400">C</span>
+                            <span class="font-mono text-xs font-bold text-slate-700 dark:text-slate-200">65 – 74</span>
+                            <span class="block text-[10px] font-semibold text-amber-600 dark:text-amber-400 mt-0.5">Cukup</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70">
+                            <span class="block text-xl font-black text-rose-600 dark:text-rose-400">E</span>
+                            <span class="font-mono text-xs font-bold text-slate-700 dark:text-slate-200">0 – 64</span>
+                            <span class="block text-[10px] font-semibold text-rose-600 dark:text-rose-400 mt-0.5">Tidak Lulus</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/80 dark:border-slate-800 mt-12 py-6 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2">
+            <p class="font-medium">Kalkulator Nilai Akhir Mahasiswa KKNI — Terintegrasi 6 Tugas & Evaluasi</p>
+            <p class="font-mono">NA = 0.05(F1) + 0.20(F2) + 0.25(F3) + 0.50(F4)</p>
+        </div>
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        /**
+         * ==========================================
+         * 1. DARK / LIGHT MODE MANAGEMENT
+         * ==========================================
+         */
+        function initTheme() {
+            const savedTheme = localStorage.getItem('kkni_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                setTheme('dark');
+            } else {
+                setTheme('light');
+            }
+        }
+
+        function setTheme(mode) {
+            const htmlEl = document.documentElement;
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const moonIcon = document.getElementById('theme-icon-moon');
+            const toggleText = document.getElementById('theme-toggle-text');
+
+            if (mode === 'dark') {
+                htmlEl.classList.add('dark');
+                htmlEl.classList.remove('light');
+                sunIcon.classList.remove('scale-0', 'opacity-0');
+                sunIcon.classList.add('scale-100', 'opacity-100', 'rotate-0');
+                moonIcon.classList.remove('scale-100', 'opacity-100');
+                moonIcon.classList.add('scale-0', 'opacity-0', '-rotate-90');
+                if (toggleText) toggleText.textContent = 'Mode Terang';
+                localStorage.setItem('kkni_theme', 'dark');
+            } else {
+                htmlEl.classList.remove('dark');
+                htmlEl.classList.add('light');
+                moonIcon.classList.remove('scale-0', 'opacity-0', '-rotate-90');
+                moonIcon.classList.add('scale-100', 'opacity-100');
+                sunIcon.classList.remove('scale-100', 'opacity-100', 'rotate-0');
+                sunIcon.classList.add('scale-0', 'opacity-0');
+                if (toggleText) toggleText.textContent = 'Mode Gelap';
+                localStorage.setItem('kkni_theme', 'light');
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            if (isDark) {
+                setTheme('light');
+                showToast('Beralih ke Mode Terang ☀️', 'info');
+            } else {
+                setTheme('dark');
+                showToast('Beralih ke Mode Gelap 🌙', 'info');
+            }
+        }
+
+        /**
+         * ==========================================
+         * 2. CALCULATION LOGIC (KKNI FORMULA)
+         * ==========================================
+         */
+        function getVal(id) {
+            const el = document.getElementById(id);
+            if (!el || el.value === '') return 0;
+            const parsed = parseFloat(el.value);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        function validateAndCalculate(inputEl) {
+            if (inputEl.value !== '') {
+                let v = parseFloat(inputEl.value);
+                if (v < 0) inputEl.value = 0;
+                else if (v > 100) inputEl.value = 100;
+            }
+            calculateAll();
+        }
+
+        function calculateAll() {
+            // Komponen F1, F2, F3
+            const f1_kehadiran = getVal('f1_kehadiran');
+            const f2_uts = getVal('f2_uts');
+            const f3_uas = getVal('f3_uas');
+
+            // Komponen F4 (6 Tugas KKNI)
+            const tr1 = getVal('tr1');
+            const tr2 = getVal('tr2');
+            const tr3 = getVal('tr3');
+            const cbr = getVal('cbr');
+            const cjr = getVal('cjr');
+            const pkseid = getVal('pkseid');
+            const mr = getVal('mr');
+            const pr = getVal('pr');
+
+            // Rata-rata Tugas Rutin (3 Kolom)
+            const avgTr = (tr1 + tr2 + tr3) / 3;
+            document.getElementById('avg-tr-text').textContent = avgTr.toFixed(2);
+
+            // Rumus F4 = 0.05*(avgTr) + 0.05*CBR + 0.10*CJR + 0.10*PKSEID + 0.30*MR + 0.40*PR
+            const f4_tr     = 0.05 * avgTr;
+            const f4_cbr    = 0.05 * cbr;
+            const f4_cjr    = 0.10 * cjr;
+            const f4_pkseid = 0.10 * pkseid;
+            const f4_mr     = 0.30 * mr;
+            const f4_pr     = 0.40 * pr;
+
+            const valF4 = f4_tr + f4_cbr + f4_cjr + f4_pkseid + f4_mr + f4_pr;
+
+            // Update indikator F4
+            document.getElementById('tr-f4-contrib').textContent = `+${f4_tr.toFixed(2)}`;
+            document.getElementById('badge-f4-score').textContent = valF4.toFixed(2);
+
+            // Rumus NA = 0.05*F1 + 0.20*F2 + 0.25*F3 + 0.50*F4
+            const contribF1 = 0.05 * f1_kehadiran;
+            const contribF2 = 0.20 * f2_uts;
+            const contribF3 = 0.25 * f3_uas;
+            const contribF4 = 0.50 * valF4;
+
+            const finalNA = contribF1 + contribF2 + contribF3 + contribF4;
+
+            // Update inline points pada kartu F1-F4
+            document.getElementById('f1-inline-pts').textContent = `+${contribF1.toFixed(2)}`;
+            document.getElementById('f2-inline-pts').textContent = `+${contribF2.toFixed(2)}`;
+            document.getElementById('f3-inline-pts').textContent = `+${contribF3.toFixed(2)}`;
+            document.getElementById('f4-na-contrib-banner').textContent = `+${contribF4.toFixed(2)}`;
+
+            // Update Visual Progress Bars F1 - F4
+            document.getElementById('bar-f1-raw').textContent = f1_kehadiran.toFixed(0);
+            document.getElementById('bar-f1-pts').textContent = contribF1.toFixed(2);
+            document.getElementById('bar-f1-fill').style.width = `${Math.min(100, f1_kehadiran)}%`;
+
+            document.getElementById('bar-f2-raw').textContent = f2_uts.toFixed(0);
+            document.getElementById('bar-f2-pts').textContent = contribF2.toFixed(2);
+            document.getElementById('bar-f2-fill').style.width = `${Math.min(100, f2_uts)}%`;
+
+            document.getElementById('bar-f3-raw').textContent = f3_uas.toFixed(0);
+            document.getElementById('bar-f3-pts').textContent = contribF3.toFixed(2);
+            document.getElementById('bar-f3-fill').style.width = `${Math.min(100, f3_uas)}%`;
+
+            document.getElementById('bar-f4-raw').textContent = valF4.toFixed(2);
+            document.getElementById('bar-f4-pts').textContent = contribF4.toFixed(2);
+            document.getElementById('bar-f4-fill').style.width = `${Math.min(100, valF4)}%`;
+
+            // Update Tabel Rincian
+            document.getElementById('tbl-f1-val').textContent = f1_kehadiran.toFixed(2);
+            document.getElementById('tbl-f1-res').textContent = `+${contribF1.toFixed(2)}`;
+
+            document.getElementById('tbl-f2-val').textContent = f2_uts.toFixed(2);
+            document.getElementById('tbl-f2-res').textContent = `+${contribF2.toFixed(2)}`;
+
+            document.getElementById('tbl-f3-val').textContent = f3_uas.toFixed(2);
+            document.getElementById('tbl-f3-res').textContent = `+${contribF3.toFixed(2)}`;
+
+            document.getElementById('tbl-f4-val').textContent = valF4.toFixed(2);
+            document.getElementById('tbl-f4-res').textContent = `+${contribF4.toFixed(2)}`;
+
+            document.getElementById('tbl-sub-tr').textContent = avgTr.toFixed(2);
+            document.getElementById('tbl-sub-tr-c').textContent = `+${f4_tr.toFixed(2)}`;
+
+            document.getElementById('tbl-sub-cbr').textContent = cbr.toFixed(2);
+            document.getElementById('tbl-sub-cbr-c').textContent = `+${f4_cbr.toFixed(2)}`;
+
+            document.getElementById('tbl-sub-cjr').textContent = cjr.toFixed(2);
+            document.getElementById('tbl-sub-cjr-c').textContent = `+${f4_cjr.toFixed(2)}`;
+
+            document.getElementById('tbl-sub-pkseid').textContent = pkseid.toFixed(2);
+            document.getElementById('tbl-sub-pkseid-c').textContent = `+${f4_pkseid.toFixed(2)}`;
+
+            document.getElementById('tbl-sub-mr').textContent = mr.toFixed(2);
+            document.getElementById('tbl-sub-mr-c').textContent = `+${f4_mr.toFixed(2)}`;
+
+            document.getElementById('tbl-sub-pr').textContent = pr.toFixed(2);
+            document.getElementById('tbl-sub-pr-c').textContent = `+${f4_pr.toFixed(2)}`;
+
+            document.getElementById('tbl-total-na').textContent = finalNA.toFixed(2);
+
+            // Update Main Result Display & Gauge
+            updateResultCard(finalNA);
+        }
+
+        /**
+         * Update Circular Gauge, Letter Grade (A, B, C, E), and Status Badge
+         */
+        function updateResultCard(na) {
+            const finalScoreEl = document.getElementById('final-score');
+            const letterEl = document.getElementById('final-letter');
+            const descEl = document.getElementById('grade-desc');
+            const badgeEl = document.getElementById('status-badge');
+            const progressBar = document.getElementById('score-progress-bar');
+            const gaugeRing = document.getElementById('gauge-ring');
+
+            finalScoreEl.textContent = na.toFixed(2);
+
+            // Linear Bar
+            const clampedScore = Math.min(100, Math.max(0, na));
+            progressBar.style.width = `${clampedScore}%`;
+
+            // Circular Ring (r = 50 -> circumference = 2 * PI * 50 = 314.16)
+            const circumference = 314.16;
+            const offset = circumference - (clampedScore / 100) * circumference;
+            gaugeRing.style.strokeDashoffset = offset;
+
+            // Check if any field has input
+            const inputs = document.querySelectorAll('.score-input');
+            let hasInput = false;
+            inputs.forEach(i => { if (i.value !== '') hasInput = true; });
+
+            // Konversi Nilai Huruf sesuai standar awal:
+            // A: 85 - 100 | B: 75 - 84 (75 - 84.99) | C: 65 - 74 (65 - 74.99) | E: 0 - 64 (< 65)
+            let letter = 'E';
+            let desc = 'Kurang / Tidak Lulus';
+            let letterStyle = 'text-rose-400 border-rose-500/30 bg-rose-500/10';
+            let ringColor = 'text-rose-500';
+            let isPass = false;
+
+            if (na >= 85) {
+                letter = 'A';
+                desc = 'Sangat Baik (Lulus)';
+                letterStyle = 'text-emerald-400 border-emerald-400/40 bg-emerald-500/15';
+                ringColor = 'text-emerald-400';
+                isPass = true;
+            } else if (na >= 75) {
+                letter = 'B';
+                desc = 'Baik (Lulus)';
+                letterStyle = 'text-blue-400 border-blue-400/40 bg-blue-500/15';
+                ringColor = 'text-blue-400';
+                isPass = true;
+            } else if (na >= 65) {
+                letter = 'C';
+                desc = 'Cukup (Lulus)';
+                letterStyle = 'text-amber-400 border-amber-400/40 bg-amber-500/15';
+                ringColor = 'text-amber-400';
+                isPass = true;
+            } else {
+                letter = 'E';
+                desc = 'Kurang / Tidak Lulus';
+                letterStyle = 'text-rose-400 border-rose-500/30 bg-rose-500/15';
+                ringColor = 'text-rose-500';
+                isPass = false;
+            }
+
+            letterEl.textContent = letter;
+            letterEl.className = `w-20 h-20 rounded-2xl border backdrop-blur-md flex items-center justify-center text-4xl font-black shadow-inner transition-all duration-300 ${letterStyle}`;
+            descEl.textContent = desc;
+            descEl.className = `text-sm font-bold mt-0.5 ${isPass ? 'text-indigo-200' : 'text-rose-300'}`;
+
+            gaugeRing.setAttribute('class', `progress-ring__circle ${ringColor}`);
+
+            if (!hasInput && na === 0) {
+                badgeEl.textContent = 'Menunggu Input';
+                badgeEl.className = 'px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700';
+            } else if (isPass) {
+                badgeEl.innerHTML = '<i class="fa-solid fa-circle-check mr-1.5"></i>LULUS';
+                badgeEl.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+            } else {
+                badgeEl.innerHTML = '<i class="fa-solid fa-circle-xmark mr-1.5"></i>TIDAK LULUS';
+                badgeEl.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-300 border border-rose-400/30';
+            }
+        }
+
+        /**
+         * ==========================================
+         * 3. USER ACTIONS (ACCORDION, DEMO, RESET, COPY, TOAST)
+         * ==========================================
+         */
+        function toggleBreakdownTable() {
+            const container = document.getElementById('breakdown-table-container');
+            const chevron = document.getElementById('breakdown-chevron');
+            const label = document.getElementById('breakdown-toggle-label');
+            const badgeState = document.getElementById('breakdown-badge-state');
+            const btn = document.getElementById('breakdown-toggle-btn');
+
+            const isHidden = container.classList.contains('hidden');
+
+            if (isHidden) {
+                container.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+                label.textContent = 'Sembunyikan Tabel Rincian';
+                badgeState.textContent = 'Tutup';
+                btn.setAttribute('aria-expanded', 'true');
+            } else {
+                container.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+                label.textContent = 'Lihat Tabel Rincian Perhitungan';
+                badgeState.textContent = 'Tampilkan';
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        function triggerManualCalculate() {
+            calculateAll();
+            const card = document.getElementById('result-card');
+            card.classList.remove('animate-highlight');
+            void card.offsetWidth;
+            card.classList.add('animate-highlight');
+
+            if (window.innerWidth < 1024) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            showToast('Perhitungan Nilai Akhir selesai!', 'success');
+        }
+
+        function fillDemoData() {
+            const sample = {
+                f1_kehadiran: 100,
+                f2_uts: 88,
+                f3_uas: 92,
+                tr1: 90,
+                tr2: 88,
+                tr3: 95,
+                cbr: 86,
+                cjr: 90,
+                pkseid: 88,
+                mr: 92,
+                pr: 94
+            };
+
+            Object.keys(sample).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = sample[id];
+            });
+
+            calculateAll();
+            showToast('Contoh nilai simulasi berhasil dimuat!', 'success');
+        }
+
+        function resetForm() {
+            document.querySelectorAll('.score-input').forEach(el => el.value = '');
+            calculateAll();
+            showToast('Semua kolom nilai telah dikosongkan', 'info');
+        }
+
+        function copySummary() {
+            const f1 = getVal('f1_kehadiran');
+            const f2 = getVal('f2_uts');
+            const f3 = getVal('f3_uas');
+            const trAvg = document.getElementById('avg-tr-text').textContent;
+            const cbr = getVal('cbr');
+            const cjr = getVal('cjr');
+            const pkseid = getVal('pkseid');
+            const mr = getVal('mr');
+            const pr = getVal('pr');
+            const f4 = document.getElementById('badge-f4-score').textContent;
+            const na = document.getElementById('final-score').textContent;
+            const grade = document.getElementById('final-letter').textContent;
+            const predikat = document.getElementById('grade-desc').textContent;
+
+            const text = 
+`==============================================
+HASIL PERHITUNGAN NILAI AKHIR MAHASISWA (KKNI)
+==============================================
+Rumus: NA = 0.05(F1) + 0.20(F2) + 0.25(F3) + 0.50(F4)
+
+• F1 (Kehadiran - 5%)     : ${f1}
+• F2 (UTS - 20%)           : ${f2}
+• F3 (UAS - 25%)           : ${f3}
+• F4 (6 Tugas KKNI - 50%) : ${f4}
+  ├─ Rata-rata TR (5%)     : ${trAvg} (TR1: ${getVal('tr1')}, TR2: ${getVal('tr2')}, TR3: ${getVal('tr3')})
+  ├─ CBR (5%)              : ${cbr}
+  ├─ CJR (10%)             : ${cjr}
+  ├─ Rekayasa Ide (10%)    : ${pkseid}
+  ├─ Mini Riset (30%)      : ${mr}
+  └─ Project (40%)         : ${pr}
+
+----------------------------------------------
+• NILAI AKHIR (NA)         : ${na}
+• NILAI HURUF              : ${grade} (${predikat})
+==============================================`;
+
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('Rincian perhitungan disalin ke clipboard!', 'success');
+            } catch (err) {
+                showToast('Gagal menyalin teks', 'warning');
+            }
+            document.body.removeChild(ta);
+        }
+
+        let toastTimer;
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            msgEl.textContent = message;
+
+            if (type === 'success') {
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else if (type === 'warning') {
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-info text-brand-400 text-lg';
+            }
+
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 2600);
+        }
+
+        // Initialize on Window Load
+        window.onload = function() {
+            initTheme();
+            calculateAll();
+        };
+    </script>
+</body>
+</html>
